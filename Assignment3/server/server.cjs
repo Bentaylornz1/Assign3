@@ -40,7 +40,7 @@ let db;
     )
   `);
 
-  console.log("✅ Orders and order_items tables are ready");
+  console.log("Orders and order_items tables are ready");
 })();
 
 app.post("/create-order", async (req, res) => {
@@ -82,6 +82,6 @@ app.post("/create-order", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
 
