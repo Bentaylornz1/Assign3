@@ -120,6 +120,38 @@ let db;
       )
     `);
 
+    // ==================================================
+    /////////// REMOVE THIS LATE - AI SEED DATA JUST TO TEST THE CHECKOUT AND ORDER ENDPOINTS
+    // --- SEED SHOPPING CART + ITEMS FOR TESTING ---
+    const existingCart = await db.get(`SELECT COUNT(*) as count FROM shopping_carts`);
+    if (existingCart.count === 0) {
+      console.log("Seeding sample shopping cart...");
+
+      // create a cart for user_id = 2 (the customer)
+      const cartResult = await db.run(`INSERT INTO shopping_carts (user_id) VALUES (2)`);
+      const cartId = cartResult.lastID;
+
+      // add 2 products to that cart
+      await db.run(`
+        INSERT INTO cart_items (cart_id, product_id, quantity)
+        VALUES
+          (?, 1, 2),   -- 2 Classic Colas
+          (?, 3, 1)    -- 1 Salted Chips
+      `, cartId, cartId);
+
+      console.log("Shopping cart seeded ✅");
+    } else {
+      console.log(`${existingCart.count} cart(s) already exist — skipping cart seed.`);
+    }
+    /////////// END OF AI SEED DATA
+    // ==================================================
+
+    const checkoutRouter = require("./routes/checkout.cjs")(db);
+    app.use("/api/checkout", checkoutRouter);
+
+    const ordersRouter = require("./routes/orders.cjs")(db);
+    app.use("/api/orders", ordersRouter);
+
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });

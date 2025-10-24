@@ -15,7 +15,7 @@ function App() {
       <h1>Welcome to Assignment 3</h1>
       <p>The Orders table will be created automatically if it doesnt exist.</p>
     </div>
-  );
+  );    
 }
 
 export default App;
