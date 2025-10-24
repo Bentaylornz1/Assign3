@@ -13,75 +13,118 @@ app.use(express.json());
 let db;
 
 (async () => {
-  db = await open({
-    filename: "./database.db",
-    driver: sqlite3.Database
-  });
-
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS orders (
-      order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_name TEXT NOT NULL,
-      shipping_address TEXT NOT NULL,
-      order_total REAL NOT NULL,
-      order_status TEXT DEFAULT 'Pending',
-      order_date TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS order_items (
-      item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      order_id INTEGER NOT NULL,
-      product_name TEXT NOT NULL,
-      quantity INTEGER NOT NULL,
-      price REAL NOT NULL,
-      FOREIGN KEY(order_id) REFERENCES orders(order_id)
-    )
-  `);
-
-  console.log("Orders and order_items tables are ready");
-})();
-
-app.post("/create-order", async (req, res) => {
   try {
-    const { customer_name, shipping_address, products } = req.body;
-    if (!customer_name || !shipping_address || !products || !products.length) {
-      return res.status(400).json({ message: "Invalid order data" });
+    db = await open({
+      filename: "./database.db",
+      driver: sqlite3.Database
+    });
+
+    // Enable foreign keys
+    await db.exec("PRAGMA foreign_keys = ON;");
+
+    // 1) USERS
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        user_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        role          TEXT NOT NULL CHECK (role IN ('ADMIN','CUSTOMER')),
+        email         TEXT NOT NULL UNIQUE,
+        password      TEXT NOT NULL,
+        name          TEXT NOT NULL
+      )
+    `);
+
+    // Seed default users once
+    // MAYBE MOVE THIS INTO ENDPOINTS LATER 
+    const existing = await db.get(`SELECT COUNT(*) as count FROM users`);
+    if (existing.count === 0) {
+      await db.run(`
+        INSERT INTO users (role, email, password, name)
+        VALUES
+          ('ADMIN', 'admin@yourlocalshop.com', 'admin123', 'Admin'),
+          ('CUSTOMER', 'customer@yourlocalshop.com', 'customer123', 'Customer')
+      `);
     }
 
-    const order_total = products.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+    // 2) PRODUCTS (Catalogue)
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS products (
+        product_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+        name         TEXT NOT NULL,
+        description  TEXT,
+        price        REAL NOT NULL,
+        stock        INTEGER NOT NULL DEFAULT 0,
+        is_active    INTEGER NOT NULL DEFAULT 1
+      )
+    `);
 
-    const result = await db.run(
-      `INSERT INTO orders (customer_name, shipping_address, order_total) VALUES (?, ?, ?)`,
-      customer_name,
-      shipping_address,
-      order_total
-    );
-
-    const order_id = result.lastID;
-
-    for (const item of products) {
-      await db.run(
-        `INSERT INTO order_items (order_id, product_name, quantity, price) VALUES (?, ?, ?, ?)`,
-        order_id,
-        item.product_name,
-        item.quantity,
-        item.price
-      );
+    // Seed default products on launch
+    // MAYBE MOVE THIS INTO ENDPOINTS LATER 
+    const existingProducts = await db.get(`SELECT COUNT(*) as count FROM products`);
+    if (existingProducts.count === 0) {
+      await db.run(`
+        INSERT INTO products (name, description, price, stock)
+        VALUES
+          ('Classic Cola 330ml', 'Sparkling soft drink', 2.50, 200),
+          ('Water 500ml', 'No sugar, refreshing drink', 1.80, 300),
+          ('Salted Chips 150g', 'Crispy salted potato chips', 3.20, 150),
+          ('Chocolate Bar 50g', 'Smooth milk chocolate bar', 2.20, 180),
+          ('Instant Noodles', 'Chicken Flavour', 2.00, 120)
+      `);
+      console.log("Products seeded");
+    } else {
+      console.log(`${existingProducts.count} products already exist — skipping seed.`);
     }
 
-    res.json({ message: "Order created successfully", order_id });
+
+    // 3) SHOPPING CARTS + CART ITEMS
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS shopping_carts (
+        cart_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id    INTEGER NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS cart_items (
+        cart_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cart_id      INTEGER NOT NULL REFERENCES shopping_carts(cart_id) ON DELETE CASCADE,
+        product_id   INTEGER NOT NULL REFERENCES products(product_id),
+        quantity     INTEGER NOT NULL CHECK (quantity > 0),
+        UNIQUE (cart_id, product_id)
+      )
+    `);
+
+    // 4) ORDERS
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS orders (
+        order_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id           INTEGER NOT NULL REFERENCES users(user_id),
+        shipping_address  TEXT NOT NULL,
+        order_total       REAL NOT NULL,
+        order_status      TEXT NOT NULL
+                          CHECK (order_status IN ('Pending','Paid','Packing','Shipped','Delivered'))
+                          DEFAULT 'Pending',
+        order_date        TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 5) ORDER ITEMS
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS order_items (
+        item_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id      INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
+        product_id    INTEGER REFERENCES products(product_id),
+        product_name  TEXT NOT NULL,
+        quantity      INTEGER NOT NULL,
+        price         REAL NOT NULL
+      )
+    `);
+
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Failed to start server:", err);
+    process.exit(1);
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
+})();
