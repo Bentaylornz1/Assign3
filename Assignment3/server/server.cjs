@@ -146,10 +146,10 @@ let db;
     /////////// END OF AI SEED DATA
     // ==================================================
 
-    const checkoutRouter = require("./routes/checkout.cjs")(db);
+    const checkoutRouter = require("./routes/checkoutroute.cjs")(db);
     app.use("/api/checkout", checkoutRouter);
 
-    const ordersRouter = require("./routes/orders.cjs")(db);
+    const ordersRouter = require("./routes/ordersroute.cjs")(db);
     app.use("/api/orders", ordersRouter);
 
     app.listen(PORT, () => {

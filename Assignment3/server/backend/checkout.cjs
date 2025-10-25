@@ -8,8 +8,22 @@
  */
 
 class Checkout {
-  constructor(db) {
+  constructor(db, { taxRate = 0.1, shippingCost = 10.0 } = {}) {
     this.db = db;
+    this.taxRate = taxRate;
+    this.shippingCost = shippingCost;
+  }
+
+  //Get the cart items for a user
+  async getCartLines(userId) {
+    return this.db.all(
+      `SELECT p.product_id, p.name, p.price, ci.quantity
+       FROM cart_items ci
+       JOIN products p ON p.product_id = ci.product_id
+       JOIN shopping_carts sc ON ci.cart_id = sc.cart_id
+       WHERE sc.user_id = ?`,
+      userId
+    );
   }
 
   // 1. Collect and validate shipping address
@@ -19,37 +33,41 @@ class Checkout {
   }
 
   // 2. Compute order total (products + taxes + shipping)
-  computeOrderTotal(lines, taxRate = 0.1, shippingCost = 10.0) {
+  computeOrderTotal(lines) {
     const subtotal = lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
-    const tax = +(subtotal * taxRate).toFixed(2);
-    const total = +(subtotal + tax + shippingCost).toFixed(2);
-    return { subtotal, tax, shippingCost, total };
+    const tax = +(subtotal * this.taxRate).toFixed(2);
+    const total = +(subtotal + tax + this.shippingCost).toFixed(2);
+    return { subtotal, tax, shippingCost: this.shippingCost, total };
   }
 
   // 3. Create Order from Shopping Cart (simple insert, no rollback)
-  async createOrderFromCart(userId, address, lines, total) {
-    const result = await this.db.run(
-      `INSERT INTO orders (user_id, shipping_address, order_total, order_status)
-       VALUES (?, ?, ?, 'Pending')`,
-      userId,
-      address,
-      total
-    );
-    const orderId = result.lastID;
+  async createOrderFromCart(userId, address) {
+    const lines = await this.getCartLines(userId);
+    const totals = this.computeOrderTotal(lines);
 
-    for (const l of lines) {
-      await this.db.run(
-        `INSERT INTO order_items (order_id, product_id, product_name, quantity, price)
-         VALUES (?, ?, ?, ?, ?)`,
-        orderId,
-        l.product_id,
-        l.name,
-        l.quantity,
-        l.price
+    await this.db.exec("BEGIN");
+    try {
+      const result = await this.db.run(
+        `INSERT INTO orders (user_id, shipping_address, order_total, order_status)
+         VALUES (?, ?, ?, 'Pending')`,
+        userId, address, totals.total
       );
-    }
+      const orderId = result.lastID;
 
-    return orderId;
+      for (const l of lines) {
+        await this.db.run(
+          `INSERT INTO order_items (order_id, product_id, product_name, quantity, price)
+           VALUES (?, ?, ?, ?, ?)`,
+          orderId, l.product_id, l.name, l.quantity, l.price
+        );
+      }
+
+      await this.db.exec("COMMIT");
+      return { orderId, lines, totals };
+    } catch (e) {
+      await this.db.exec("ROLLBACK");
+      throw e;
+    }
   }
 
   // 4. Generate invoice for Order
@@ -66,18 +84,13 @@ class Checkout {
     };
   }
 
-  // 5. Initiate payment (always succeeds)
-  async initiatePayment(orderId) {
-    await this.db.run(`UPDATE orders SET order_status = 'Paid' WHERE order_id = ?`, orderId);
-    return { order_id: orderId, status: "Paid" };
-  }
-
-  // 6. Issue receipt (simple local generation)
+  // 6. Issue receipt
   async issueReceipt(orderId) {
     const order = await this.db.get(`SELECT * FROM orders WHERE order_id = ?`, orderId);
     const items = await this.db.all(`SELECT * FROM order_items WHERE order_id = ?`, orderId);
     return {
-      receipt_number: `RCT-${orderId}`,
+      //Im just going to make the receipt number the OrderID for simplicity
+      receipt_number: `Receipt Number: ${orderId}`,
       order,
       items,
       paid_at: new Date().toISOString(),

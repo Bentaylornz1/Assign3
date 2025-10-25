@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import './App.css';
+import logo from "./assets/logo.png";
 
 function App() {
   useEffect(() => {
@@ -11,11 +12,19 @@ function App() {
   }, []);
 
   return (
-    <div className="App">
-      <h1>Welcome to Assignment 3</h1>
-      <p>The Orders table will be created automatically if it doesnt exist.</p>
+    <div className="app">
+      {/* Header */}
+      <header className="header">
+        <img src={logo} alt="Logo" className="logo" />
+      </header>
+
+      {/* Catalogue placeholder */}
+      <main className="catalogue">
+        <h1>Catalogue</h1>
+        <p>**Inset the catalogue here**</p>
+      </main>
     </div>
-  );    
+  );
 }
 
 export default App;
