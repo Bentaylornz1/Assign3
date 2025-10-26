@@ -5,7 +5,7 @@ const sqlite3 = require("sqlite3").verbose();
 const { open } = require("sqlite");
 
 const app = express();
-const PORT = 5000;
+const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
@@ -151,6 +151,15 @@ let db;
 
     const ordersRouter = require("./routes/ordersroute.cjs")(db);
     app.use("/api/orders", ordersRouter);
+
+    const catalogueRouter = require("./routes/catalogueroute.cjs")(db);
+    app.use("/api/catalogue", catalogueRouter);
+
+    const shoppingCartRouter = require("./routes/shoppingcartroute.cjs")(db);
+    app.use("/api/cart", shoppingCartRouter);
+
+
+
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
