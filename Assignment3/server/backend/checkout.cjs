@@ -40,10 +40,32 @@ class Checkout {
     return { subtotal, tax, shippingCost: this.shippingCost, total };
   }
 
-  // 3. Create Order from Shopping Cart (simple insert, no rollback)
+  // 3. Check stock availability before creating order
+  async checkStockAvailability(lines) {
+    for (const line of lines) {
+      const product = await this.db.get(
+        `SELECT stock, name FROM products WHERE product_id = ?`,
+        line.product_id
+      );
+      
+      if (!product) {
+        throw new Error(`Product ${line.product_id} not found`);
+      }
+      
+      if (product.stock < line.quantity) {
+        throw new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${line.quantity}`);
+      }
+    }
+    return true;
+  }
+
+  // 4. Create Order from Shopping Cart (with stock check)
   async createOrderFromCart(userId, address) {
     const lines = await this.getCartLines(userId);
     const totals = this.computeOrderTotal(lines);
+
+    // Check stock availability before creating order
+    await this.checkStockAvailability(lines);
 
     await this.db.exec("BEGIN");
     try {
@@ -70,7 +92,7 @@ class Checkout {
     }
   }
 
-  // 4. Generate invoice for Order
+  // 5. Generate invoice for Order
   async generateInvoice(orderId) {
     const order = await this.db.get(`SELECT * FROM orders WHERE order_id = ?`, orderId);
     const items = await this.db.all(`SELECT * FROM order_items WHERE order_id = ?`, orderId);
@@ -112,11 +134,46 @@ class Checkout {
     return true;
   }
 
-  // 9. Trigger Fulfilment (instant delivery for now)
+  // 9. Assert order belongs to user
+  async assertOrderBelongsToUser(orderId, userId) {
+    const order = await this.db.get(`SELECT * FROM orders WHERE order_id = ? AND user_id = ?`, orderId, userId);
+    if (!order) throw new Error("Order not found or does not belong to user");
+    return order;
+  }
 
-  async triggerFulfilment(orderId) {
-    await this.db.run(`UPDATE orders SET order_status = 'Delivered' WHERE order_id = ?`, orderId);
-    return { order_id: orderId, status: "Delivered" };
+  // 10. Reduce stock levels for ordered items
+  async reduceStockLevels(orderId) {
+    const orderItems = await this.db.all(
+      `SELECT product_id, quantity FROM order_items WHERE order_id = ?`,
+      orderId
+    );
+
+    for (const item of orderItems) {
+      await this.db.run(
+        `UPDATE products SET stock = stock - ? WHERE product_id = ?`,
+        item.quantity, item.product_id
+      );
+    }
+
+    return { order_id: orderId, items_updated: orderItems.length };
+  }
+
+  // 11. Initiate payment (mark as paid and reduce stock)
+  async initiatePayment(orderId) {
+    await this.db.exec("BEGIN");
+    try {
+      // Update order status to paid
+      await this.db.run(`UPDATE orders SET order_status = 'Paid' WHERE order_id = ?`, orderId);
+      
+      // Reduce stock levels for all items in the order
+      await this.reduceStockLevels(orderId);
+      
+      await this.db.exec("COMMIT");
+      return { order_id: orderId, status: "Paid" };
+    } catch (e) {
+      await this.db.exec("ROLLBACK");
+      throw e;
+    }
   }
 
 }

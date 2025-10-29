@@ -9,7 +9,7 @@ class ShoppingCart {
       `SELECT * FROM shopping_carts WHERE user_id = ?`,
       userId
     );
-    if (!cart) return { cart: null, items: [] };
+    if (!cart) return { cart_id: null, user_id: userId, items: [], item_count: 0, total: 0 };
 
     const items = await this.db.all(
       `SELECT ci.cart_item_id, ci.product_id, ci.quantity, p.name, p.description, p.price
@@ -19,7 +19,17 @@ class ShoppingCart {
       cart.cart_id
     );
 
-    return { cart_id: cart.cart_id, user_id: userId, items };
+    //item count and items total price to show on shopping cart page
+    const item_count = items.reduce((sum, item) => sum + item.quantity, 0);
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    return { 
+      cart_id: cart.cart_id, 
+      user_id: userId, 
+      items,
+      item_count,
+      total: parseFloat(total.toFixed(2))
+    };
   }
 
   //add an item to a users cart

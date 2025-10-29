@@ -121,7 +121,7 @@ let db;
     `);
 
     // ==================================================
-    /////////// REMOVE THIS LATE - AI SEED DATA JUST TO TEST THE CHECKOUT AND ORDER ENDPOINTS
+    /////////// REMOVE THIS LATER - AI SEED DATA JUST TO TEST THE CHECKOUT AND ORDER ENDPOINTS
     // --- SEED SHOPPING CART + ITEMS FOR TESTING ---
     const existingCart = await db.get(`SELECT COUNT(*) as count FROM shopping_carts`);
     if (existingCart.count === 0) {
@@ -139,7 +139,7 @@ let db;
           (?, 3, 1)    -- 1 Salted Chips
       `, cartId, cartId);
 
-      console.log("Shopping cart seeded ✅");
+      console.log("Shopping cart seeded");
     } else {
       console.log(`${existingCart.count} cart(s) already exist — skipping cart seed.`);
     }
