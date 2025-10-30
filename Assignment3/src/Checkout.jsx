@@ -53,7 +53,7 @@ function Checkout({
 
       const quoteData = await quoteResponse.json();
       
-      // Create a mock invoice from the quote data
+      //JUST A MOCK INVOICE FOR NOW 
       const mockInvoice = {
         invoice_number: 'QUOTE-PREVIEW',
         order: {
@@ -201,7 +201,7 @@ function Checkout({
 
             <button 
               type="submit" 
-              className="btn btn-primary checkout-btn"
+              className="btn btn--success checkout-btn"
               disabled={isProcessing}
             >
               {isProcessing ? 'Processing...' : 'Next'}
@@ -326,7 +326,7 @@ function Checkout({
 
             <button 
               type="submit" 
-              className="btn btn-primary checkout-btn"
+              className="btn btn--success checkout-btn"
               disabled={isCompletingOrder}
             >
               {isCompletingOrder ? 'Processing Payment...' : 'Pay Now'}

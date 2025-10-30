@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 
-function Catalogue({ currentUserId, onAddToCart }) {
+function Catalogue({ onAddToCart }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,7 +33,7 @@ function Catalogue({ currentUserId, onAddToCart }) {
   };
 
   return (
-    <>
+    <div className="cart-page">
       {loading && <div className="loading">Loading products...</div>}
       
       {error && (
@@ -91,7 +91,7 @@ function Catalogue({ currentUserId, onAddToCart }) {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 

@@ -78,7 +78,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Common Card Styles - For interactive cards with hover effects */
+/* Common Card Styles */
 .card-base {
   background-color: #ffffff;
   border: 1px solid #e0e0e0;
@@ -156,7 +156,7 @@
   color: #f44336;
 }
 
-/* Common Section Styles - For content sections within containers */
+/* Common Section Styles */
 .section-base {
   background-color: #f9f9f9;
   border: 1px solid #e0e0e0;
@@ -185,6 +185,60 @@
 
 .btn-base:hover {
   background-color: #535bf2;
+}
+
+/* Unified button utilities */
+.btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s;
+  color: #fff;
+}
+
+.btn--primary {
+  background-color: #646cff;
+  border-color: #646cff;
+}
+
+.btn--primary:hover {
+  background-color: #535bf2;
+}
+
+.btn--success {
+  background-color: #4caf50;
+  border-color: #4caf50;
+}
+
+.btn--success:hover {
+  background-color: #45a049;
+}
+
+.btn--danger {
+  background-color: #f44336;
+  border-color: #f44336;
+}
+
+.btn--danger:hover {
+  background-color: #e53935;
+}
+
+.btn--sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.btn--muted {
+  background-color: #e0e0e0;
+  border-color: #e0e0e0;
+  color: #333;
+}
+
+.btn--muted:hover {
+  background-color: #d5d5d5;
 }
 
 /* Specific Button Styles */
@@ -256,6 +310,7 @@
 .cart-page {
   width: 100%;
   max-width: 900px;
+  margin: 0 auto;
 }
 
 .cart-items {
@@ -367,6 +422,17 @@
   color: white;
 }
 
+/* Always-red danger button variant */
+.btn-danger {
+  background-color: #f44336;
+  border-color: #f44336;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background-color: #e53935;
+}
+
 .cart-summary {
   background-color: #ffffff;
   border: 1px solid #e0e0e0;
@@ -451,47 +517,93 @@
 .catalogue {
   width: 80%;
   max-width: 1000px;
+  margin: 0 auto;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .app {
-    padding: 1rem;
-  }
-
-  .user-toggle,
-  .shopping-cart-toggle {
-    position: relative;
-    top: 0;
-    margin-bottom: 1rem;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .toggle-button,
-  .cart-button {
-    width: 100%;
-    max-width: 300px;
-  }
-
-  .logo {
-    height: 10em;
-  }
-
-  .header h1 {
-    font-size: 2em;
-  }
-
-  .cart-item {
-    grid-template-columns: 1fr;
-  }
-
-  .cart-item-controls {
-    align-items: stretch;
-    min-width: auto;
-  }
+/* Wider layout for admin pages (e.g., admin update catalogue) */
+.admin-wide {
+  width: 95%;
+  max-width: 1400px;
 }
+
+/* Generic bordered table for admin views */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #e0e0e0;
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table thead th {
+  background: #f7f7f7;
+}
+
+.table-wrapper {
+  margin-top: 16px;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.btn-green {
+  border-color: #4caf50;
+  background-color: #4caf50;
+}
+
+.btn-green:hover {
+  background-color: #45a049;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-narrow,
+.input--narrow {
+  max-width: 110px;
+}
+
+.admin-add-form-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+}
+
+.admin-add-form-row .form-group {
+  flex: 1 1 200px;
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+.admin-add-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-add-form-row .form-group label {
+  margin-bottom: 6px;
+}
+
+.admin-add-form-row .form-group input {
+  width: 100%;
+}
+
+.admin-add-form-row .form-group:nth-child(2) {
+  flex: 2 1 320px;
+}
+
+/* (No mobile-specific responsive overrides) */
 
 
 /* Checkout Page Styles */
@@ -680,17 +792,4 @@
   gap: 0.75rem;
 }
 
-/* Responsive Checkout */
-@media (max-width: 768px) {
-  .checkout-page {
-    padding: 1rem;
-  }
-  
-  .checkout-header h1 {
-    font-size: 2rem;
-  }
-  
-  .checkout-form h2 {
-    font-size: 1.5rem;
-  }
-}
+/* (No checkout responsive overrides) */
