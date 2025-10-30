@@ -34,7 +34,7 @@ let db;
     `);
 
     // Seed default users once
-    // MAYBE MOVE THIS INTO ENDPOINTS LATER 
+    // MAYBE MOVE THIS INTO ENDPOINTS LATER
     const existing = await db.get(`SELECT COUNT(*) as count FROM users`);
     if (existing.count === 0) {
       await db.run(`
@@ -58,7 +58,7 @@ let db;
     `);
 
     // Seed default products on launch
-    // MAYBE MOVE THIS INTO ENDPOINTS LATER 
+    // MAYBE MOVE THIS INTO ENDPOINTS LATER
     const existingProducts = await db.get(`SELECT COUNT(*) as count FROM products`);
     if (existingProducts.count === 0) {
       await db.run(`
@@ -158,7 +158,11 @@ let db;
     const shoppingCartRouter = require("./routes/shoppingcartroute.cjs")(db);
     app.use("/api/cart", shoppingCartRouter);
 
+    const fulfilmentRouter = require("./routes/fulfilmentroute.cjs")(db);
+    app.use("/api/fulfilment", fulfilmentRouter);
 
+    const statsRouter = require("./routes/statsroute.cjs")(db);
+    app.use("/api/stats", statsRouter);
 
 
     app.listen(PORT, () => {
