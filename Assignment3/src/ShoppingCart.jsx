@@ -3,25 +3,14 @@ import './App.css';
 function ShoppingCart({ 
   cartItems, 
   cartTotal,
-  currentUserId,
   onQuantityChange, 
   onRemoveItem, 
-  onCheckout,
-  onContinueShopping 
+  onCheckout
 }) {
 
   return (
     <div className="cart-page">
-      {cartItems.length === 0 ? (
-        <div className="empty-cart">
-          <p>Your cart is empty.</p>
-          <button onClick={onContinueShopping} className="continue-shopping-button">
-            Catalogue
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="cart-items-container">
+      <div className="cart-items-container">
             <div className="cart-items">
               {cartItems.map((item) => (
                 <div key={item.cart_item_id} className="cart-item">
@@ -73,18 +62,16 @@ function ShoppingCart({
                 </div>
               ))}
             </div>
-          </div>
-          <div className="cart-summary">
-            <div className="cart-total">
-              <span className="total-label">Total:</span>
-              <span className="total-amount">${(cartTotal || 0).toFixed(2)}</span>
-            </div>
-            <button className="checkout-button" onClick={onCheckout}>
-              Proceed to Checkout
-            </button>
-          </div>
-        </>
-      )}
+      </div>
+      <div className="cart-summary">
+        <div className="cart-total">
+          <span className="total-label">Total:</span>
+          <span className="total-amount">${(cartTotal || 0).toFixed(2)}</span>
+        </div>
+        <button className="checkout-button" onClick={onCheckout}>
+          Proceed to Checkout
+        </button>
+      </div>
     </div>
   );
 }

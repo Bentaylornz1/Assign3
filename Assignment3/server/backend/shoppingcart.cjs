@@ -77,7 +77,6 @@ class ShoppingCart {
       `SELECT * FROM shopping_carts WHERE user_id = ?`,
       userId
     );
-    if (!cart) throw new Error("Cart not found");
 
     if (quantity <= 0) {
       //remove item if quantity zero or negative

@@ -1,4 +1,4 @@
-// Checkout page
+// Checkout page:
 // Shipping Address
 // Invoice
 // Payment
@@ -14,70 +14,55 @@ function Checkout({
   onCheckoutComplete 
 }) {
   const [shippingAddress, setShippingAddress] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [invoice, setInvoice] = useState(null);
-  const [error, setError] = useState('');
   const [showInvoice, setShowInvoice] = useState(false);
-  const [isCompletingOrder, setIsCompletingOrder] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [showReceipt, setShowReceipt] = useState(false);
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!shippingAddress.trim()) {
-      setError('Please enter a shipping address');
-      return;
-    }
 
-    setIsProcessing(true);
-    setError('');
+    const quoteResponse = await fetch('http://localhost:4000/api/checkout/quote', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: currentUserId,
+        shipping_address: shippingAddress.trim()
+      })
+    });
 
-    try {
-      // Get a quote to display the invoice without creating an order - Quote is new for Assign.3
-      const quoteResponse = await fetch('http://localhost:4000/api/checkout/quote', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: currentUserId,
-          shipping_address: shippingAddress.trim()
-        })
-      });
+    const quoteData = await quoteResponse.json();
+    
+    const mockInvoice = {
+      invoice_number: 'QUOTE-PREVIEW',
+      order: {
+        order_id: 'PENDING',
+        order_status: 'Quote',
+        shipping_address: shippingAddress.trim(),
+        created_at: new Date().toISOString()
+      },
+      items: quoteData.items,
+      subtotal: quoteData.totals.subtotal,
+      tax: quoteData.totals.tax,
+      shipping: quoteData.totals.shippingCost,
+      total: quoteData.totals.total
+    };
 
-      if (!quoteResponse.ok) {
-        throw new Error('Failed to get quote');
-      }
-
-      const quoteData = await quoteResponse.json();
-      
-      //JUST A MOCK INVOICE FOR NOW 
-      const mockInvoice = {
-        invoice_number: 'QUOTE-PREVIEW',
-        order: {
-          order_id: 'PENDING',
-          order_status: 'Quote',
-          shipping_address: shippingAddress.trim(),
-          created_at: new Date().toISOString()
-        },
-        items: quoteData.items,
-        subtotal: quoteData.totals.subtotal,
-        tax: quoteData.totals.tax,
-        shipping: quoteData.totals.shippingCost,
-        total: quoteData.totals.total
-      };
-
-      setInvoice(mockInvoice);
-      setShowInvoice(true);
-
-    } catch (err) {
-      console.error('Quote error:', err);
-      setError(err.message || 'Failed to get quote. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
+    setInvoice(mockInvoice);
+    setShowInvoice(true);
   };
 
   const handleBackToCart = () => {
@@ -98,71 +83,37 @@ function Checkout({
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
-    if (!cardNumber.trim() || !expiryDate.trim()) {
-      setError('Please enter both card number and expiry date');
-      return;
-    }
 
-    setIsCompletingOrder(true);
-    setError('');
+    const orderResponse = await fetch('http://localhost:4000/api/checkout/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: currentUserId,
+        shipping_address: shippingAddress.trim()
+      })
+    });
 
-    try {
-      // Create the actual order
-      const orderResponse = await fetch('http://localhost:4000/api/checkout/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: currentUserId,
-          shipping_address: shippingAddress.trim()
-        })
-      });
+    const orderData = await orderResponse.json();
+    const orderId = orderData.order_id;
 
-      if (!orderResponse.ok) {
-        throw new Error('Failed to create order');
-      }
+    await fetch('http://localhost:4000/api/checkout/pay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        user_id: currentUserId
+      })
+    });
 
-      const orderData = await orderResponse.json();
-      const orderId = orderData.order_id;
-
-      // Process payment
-      const paymentResponse = await fetch('http://localhost:4000/api/checkout/pay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          order_id: orderId,
-          user_id: currentUserId
-        })
-      });
-
-      if (!paymentResponse.ok) {
-        throw new Error('Payment failed');
-      }
-
-      const paymentResult = await paymentResponse.json();
-      console.log('Payment result:', paymentResult);
-
-      // Get the real invoice after payment is complete
-      const invoiceResponse = await fetch(`http://localhost:4000/api/checkout/invoice/${orderId}`);
-      if (invoiceResponse.ok) {
-        const invoiceData = await invoiceResponse.json();
-        console.log('Invoice data after payment:', invoiceData);
-        setInvoice(invoiceData);
-        setShowPaymentForm(false);
-        setShowReceipt(true);
-      } else {
-        console.error('Failed to fetch invoice:', invoiceResponse.status);
-      }
-
-    } catch (err) {
-      console.error('Order completion error:', err);
-      setError(err.message || 'Failed to complete order. Please try again.');
-    } finally {
-      setIsCompletingOrder(false);
-    }
+    const invoiceResponse = await fetch(`http://localhost:4000/api/checkout/invoice/${orderId}`);
+    const invoiceData = await invoiceResponse.json();
+    setInvoice(invoiceData);
+    setShowPaymentForm(false);
+    setShowReceipt(true);
   };
 
 
@@ -171,7 +122,7 @@ function Checkout({
       {/* Back to Cart Button - Top Right */}
       <div className="shopping-cart-toggle">
         <button className="cart-button" onClick={handleBackToCart}>
-          ← Back to Cart
+          Back to Cart
         </button>
       </div>
 
@@ -193,18 +144,11 @@ function Checkout({
               />
             </div>
 
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
-
             <button 
               type="submit" 
               className="btn btn--success checkout-btn"
-              disabled={isProcessing}
             >
-              {isProcessing ? 'Processing...' : 'Next'}
+              Next
             </button>
           </form>
         </div>
@@ -212,11 +156,6 @@ function Checkout({
 
       {showInvoice && invoice && !showReceipt && (
         <div className="invoice-container">
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
           <h2>Invoice</h2>
           
           <div className="invoice-details">
@@ -225,7 +164,7 @@ function Checkout({
               <p><strong>Order ID: </strong> {invoice.order.order_id}</p>
               <p><strong>Status: </strong> {invoice.order.order_status}</p>
               <p><strong>Shipping Address: </strong> {invoice.order.shipping_address}</p>
-              <p><strong>Order Date: </strong> {new Date(invoice.order.created_at).toLocaleDateString()}</p>
+              <p><strong>Order Date: </strong> {formatDate(invoice.order.order_date)}</p>
             </div>
 
             <div className="invoice-section">
@@ -273,9 +212,8 @@ function Checkout({
               <button 
                 className="btn btn-primary"
                 onClick={handleCompleteOrder}
-                disabled={isCompletingOrder}
               >
-                {isCompletingOrder ? 'Processing...' : 'Complete Order'}
+                Complete Order
               </button>
             ) : (
               <button 
@@ -318,18 +256,11 @@ function Checkout({
               />
             </div>
 
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
-
             <button 
               type="submit" 
               className="btn btn--success checkout-btn"
-              disabled={isCompletingOrder}
             >
-              {isCompletingOrder ? 'Processing Payment...' : 'Pay Now'}
+              Pay Now
             </button>
           </form>
         </div>
@@ -339,7 +270,7 @@ function Checkout({
         <div className="invoice-container">
           <h2>Order Complete!</h2>
           <p style={{ textAlign: 'center', color: '#4caf50', fontSize: '1.2rem', marginBottom: '2rem' }}>
-            Thank you for your purchase! Your order has been processed successfully.
+            Thank you for your purchase! Your order will be delivered shortly.
           </p>
           
           <div className="invoice-details">
@@ -348,7 +279,7 @@ function Checkout({
               <p><strong>Order ID: </strong> {invoice.order.order_id}</p>
               <p><strong>Status: </strong> {invoice.order.order_status}</p>
               <p><strong>Shipping Address: </strong> {invoice.order.shipping_address}</p>
-              <p><strong>Order Date: </strong> {new Date(invoice.order.created_at).toLocaleDateString()}</p>
+              <p><strong>Order Date: </strong> {formatDate(invoice.order.order_date)}</p>
             </div>
 
             <div className="invoice-section">
@@ -381,7 +312,7 @@ function Checkout({
 
           <div className="checkout-actions">
             <button 
-              className="btn btn-primary"
+              className="cart-button"
               onClick={handleBackToCatalogue}
             >
               Back to Catalogue

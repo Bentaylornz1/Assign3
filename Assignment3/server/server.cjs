@@ -121,29 +121,121 @@ let db;
     `);
 
     // ==================================================
-    /////////// REMOVE THIS LATER - AI SEED DATA JUST TO TEST THE CHECKOUT AND ORDER ENDPOINTS
-    // --- SEED SHOPPING CART + ITEMS FOR TESTING ---
-    const existingCart = await db.get(`SELECT COUNT(*) as count FROM shopping_carts`);
-    if (existingCart.count === 0) {
-      console.log("Seeding sample shopping cart...");
+    ///////////THIS IS AI SEED DATA TO SHOW THE SYSTEM WORKING, SPECIFICALLY FOR THE STATISTICS
+    /////////// SEED PAST MONTH ORDERS
+    // --- SEED ORDERS FROM PAST MONTH FOR STATS ---
+    const existingOrders = await db.get(`SELECT COUNT(*) as count FROM orders`);
+    if (existingOrders.count === 0) {
+      console.log("Seeding past month orders...");
 
-      // create a cart for user_id = 2 (the customer)
-      const cartResult = await db.run(`INSERT INTO shopping_carts (user_id) VALUES (2)`);
-      const cartId = cartResult.lastID;
+      const products = [
+        [1, 'Classic Cola 330ml', 2.50],
+        [2, 'Water 500ml', 1.80],
+        [3, 'Salted Chips 150g', 3.20],
+        [4, 'Chocolate Bar 50g', 2.20],
+        [5, 'Instant Noodles', 2.00]
+      ];
 
-      // add 2 products to that cart
-      await db.run(`
-        INSERT INTO cart_items (cart_id, product_id, quantity)
-        VALUES
-          (?, 1, 2),   -- 2 Classic Colas
-          (?, 3, 1)    -- 1 Salted Chips
-      `, cartId, cartId);
+      const today = new Date();
+      
+      const orderTemplates = [
+        { items: [[1, 2], [3, 1]], status: 'Delivered', address: '123 Main St, Melbourne VIC 3000' },
+        { items: [[2, 5], [4, 2]], status: 'Delivered', address: '45 Oak Avenue, Sydney NSW 2000' },
+        { items: [[1, 1], [3, 2], [5, 3]], status: 'Delivered', address: '78 Pine Road, Brisbane QLD 4000' },
+        { items: [[4, 4]], status: 'Delivered', address: '12 Elm Street, Perth WA 6000' },
+        { items: [[2, 3], [1, 2]], status: 'Delivered', address: '99 River Drive, Adelaide SA 5000' },
+        { items: [[3, 1], [4, 1], [5, 2]], status: 'Delivered', address: '56 Park Lane, Hobart TAS 7000' },
+        { items: [[1, 3], [2, 2]], status: 'Delivered', address: '23 Beach Road, Gold Coast QLD 4217' },
+        { items: [[5, 5]], status: 'Delivered', address: '34 Mountain View, Canberra ACT 2600' },
+        { items: [[3, 2], [4, 3]], status: 'Delivered', address: '67 Garden Way, Darwin NT 0800' },
+        { items: [[1, 4], [2, 1], [5, 2]], status: 'Delivered', address: '89 Harbor Street, Melbourne VIC 3000' },
+        { items: [[2, 6], [3, 1]], status: 'Delivered', address: '11 Sunset Boulevard, Sydney NSW 2000' },
+        { items: [[4, 5], [1, 2]], status: 'Delivered', address: '22 Valley Road, Brisbane QLD 4000' },
+        { items: [[5, 3], [3, 2]], status: 'Delivered', address: '33 Coast Highway, Perth WA 6000' },
+        { items: [[1, 5], [4, 2], [2, 3]], status: 'Delivered', address: '44 Hill Street, Adelaide SA 5000' },
+        { items: [[3, 3], [5, 1]], status: 'Delivered', address: '55 Forest Drive, Hobart TAS 7000' },
+        { items: [[2, 4], [1, 3]], status: 'Delivered', address: '66 Ocean View, Gold Coast QLD 4217' },
+        { items: [[4, 6], [3, 1], [5, 2]], status: 'Delivered', address: '77 Skyline Road, Canberra ACT 2600' },
+        { items: [[1, 2], [2, 5]], status: 'Delivered', address: '88 Desert Lane, Darwin NT 0800' },
+        { items: [[5, 4], [4, 1]], status: 'Delivered', address: '19 Green Street, Melbourne VIC 3000' },
+        { items: [[3, 4], [2, 2], [1, 1]], status: 'Delivered', address: '20 Blue Avenue, Sydney NSW 2000' },
+        { items: [[4, 3], [5, 3]], status: 'Delivered', address: '21 Red Circle, Brisbane QLD 4000' },
+        { items: [[1, 6], [3, 2]], status: 'Delivered', address: '24 Yellow Way, Perth WA 6000' },
+        { items: [[2, 7], [4, 1], [5, 1]], status: 'Delivered', address: '25 Purple Drive, Adelaide SA 5000' },
+        { items: [[3, 5], [1, 2]], status: 'Delivered', address: '26 Orange Road, Hobart TAS 7000' }
+      ];
 
-      console.log("Shopping cart seeded");
+      const specificDateOrders = [
+        { items: [[1, 3], [3, 2]], status: 'Paid', address: '101 Commerce Street, Melbourne VIC 3000', dateStr: '30/10' },
+        { items: [[2, 4], [4, 1]], status: 'Packing', address: '202 Business Avenue, Sydney NSW 2000', dateStr: '30/10' },
+        { items: [[5, 5], [1, 2]], status: 'Paid', address: '303 Trade Road, Brisbane QLD 4000', dateStr: '29/10' },
+        { items: [[3, 3], [2, 3]], status: 'Packing', address: '404 Market Lane, Perth WA 6000', dateStr: '29/10' },
+        { items: [[4, 2], [5, 4], [1, 1]], status: 'Paid', address: '505 Retail Boulevard, Adelaide SA 5000', dateStr: '28/10' }
+      ];
+
+      const createOrder = async (template, orderDate) => {
+        let orderTotal = 0;
+        template.items.forEach(([productId, quantity]) => {
+          const product = products.find(p => p[0] === productId);
+          if (product) {
+            orderTotal += product[2] * quantity;
+          }
+        });
+
+        const orderResult = await db.run(
+          `INSERT INTO orders (user_id, shipping_address, order_total, order_status, order_date)
+           VALUES (?, ?, ?, ?, ?)`,
+          2, 
+          template.address,
+          orderTotal.toFixed(2),
+          template.status,
+          orderDate.toISOString()
+        );
+
+        const orderId = orderResult.lastID;
+
+        for (const [productId, quantity] of template.items) {
+          const product = products.find(p => p[0] === productId);
+          if (product) {
+            await db.run(
+              `INSERT INTO order_items (order_id, product_id, product_name, quantity, price)
+               VALUES (?, ?, ?, ?, ?)`,
+              orderId,
+              productId,
+              product[1],
+              quantity,
+              product[2]
+            );
+          }
+        }
+      };
+
+      for (let i = 0; i < orderTemplates.length; i++) {
+        const template = orderTemplates[i];
+        const daysAgo = Math.floor(Math.random() * 30);
+        const orderDate = new Date(today);
+        orderDate.setDate(orderDate.getDate() - daysAgo);
+        orderDate.setHours(Math.floor(Math.random() * 24));
+        orderDate.setMinutes(Math.floor(Math.random() * 60));
+        
+        await createOrder(template, orderDate);
+      }
+
+      const currentYear = today.getFullYear();
+      for (const template of specificDateOrders) {
+        const [day, month] = template.dateStr.split('/');
+        const orderDate = new Date(currentYear, parseInt(month) - 1, parseInt(day));
+        orderDate.setHours(Math.floor(Math.random() * 24));
+        orderDate.setMinutes(Math.floor(Math.random() * 60));
+        
+        await createOrder(template, orderDate);
+      }
+
+      console.log(`Seeded ${orderTemplates.length} orders from the past month and ${specificDateOrders.length} orders for specific dates`);
     } else {
-      console.log(`${existingCart.count} cart(s) already exist — skipping cart seed.`);
+      console.log(`${existingOrders.count} order(s) already exist — skipping order seed.`);
     }
-    /////////// END OF AI SEED DATA
+    /////////// END OF PAST MONTH ORDERS SEED
     // ==================================================
 
     const checkoutRouter = require("./routes/checkoutroute.cjs")(db);

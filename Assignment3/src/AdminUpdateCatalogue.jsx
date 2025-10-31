@@ -5,7 +5,6 @@ import './App.css';
 
 function AdminUpdateCatalogue() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
   
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', price: 0, stock: 0, is_active: false });
@@ -13,11 +12,9 @@ function AdminUpdateCatalogue() {
   const [addForm, setAddForm] = useState({ name: '', description: '', price: 0, stock: 0 });
 
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch('http://localhost:4000/api/catalogue');
+    const res = await fetch('http://localhost:4000/api/catalogue/all');
     const data = await res.json();
     setProducts(Array.isArray(data) ? data : []);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -106,12 +103,7 @@ function AdminUpdateCatalogue() {
         </div>
       )}
 
-      {loading && <p className="loading">Loading products...</p>}
-      {!loading && (
-        products.length === 0 ? (
-          <p className="no-products">No products found.</p>
-        ) : (
-          <div className="table-wrapper">
+      <div className="table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
@@ -256,9 +248,7 @@ function AdminUpdateCatalogue() {
                 })}
               </tbody>
             </table>
-          </div>
-        )
-      )}
+      </div>
     </div>
   );
 }

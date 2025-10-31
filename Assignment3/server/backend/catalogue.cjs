@@ -3,8 +3,15 @@ class Catalogue {
     this.db = db;
   }
 
-  //fetch all products (for customer)
+  //fetch all products (for customer) - only active products
   async listAll() {
+    return await this.db.all(
+      `SELECT * FROM products WHERE is_active = 1 ORDER BY product_id ASC`
+    );
+  }
+
+  //fetch all products including inactive (for admin)
+  async listAllIncludingInactive() {
     return await this.db.all(
       `SELECT * FROM products ORDER BY product_id ASC`
     );

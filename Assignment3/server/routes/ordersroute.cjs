@@ -8,81 +8,48 @@ module.exports = function ordersRouterFactory(db) {
 
   // List all orders (admin/simple)
   router.get("/", async (req, res) => {
-    try {
-      const rows = await orders.listAll();
-      res.json(rows);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    const rows = await orders.listAll();
+    res.json(rows);
   });
 
   // List orders by user
   router.get("/user/:userId", async (req, res) => {
-    try {
-      const rows = await orders.listByUser(req.params.userId);
-      res.json(rows);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    const rows = await orders.listByUser(req.params.userId);
+    res.json(rows);
   });
 
   // Get a single order (with items)
   router.get("/:id", async (req, res) => {
-    try {
-      const data = await orders.getOrderWithItems(req.params.id);
-      if (!data) return res.status(404).json({ error: "Order not found" });
-      res.json(data);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    const data = await orders.getOrderWithItems(req.params.id);
+    res.json(data);
   });
 
   // Invoice
   router.get("/:id/invoice", async (req, res) => {
-    try {
-      const invoice = await orders.getInvoice(req.params.id);
-      if (!invoice) return res.status(404).json({ error: "Order not found" });
-      // Ensure numeric values for front-end formatting
-      invoice.subtotal = Number(invoice.subtotal);
-      invoice.total    = Number(invoice.total);
-      res.json(invoice);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    const invoice = await orders.getInvoice(req.params.id);
+    invoice.subtotal = Number(invoice.subtotal);
+    invoice.total    = Number(invoice.total);
+    res.json(invoice);
   });
 
   // Receipt
   router.get("/:id/receipt", async (req, res) => {
-    try {
-      const receipt = await orders.getReceipt(req.params.id);
-      if (!receipt) return res.status(404).json({ error: "Order not found" });
-      res.json(receipt);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    const receipt = await orders.getReceipt(req.params.id);
+    res.json(receipt);
   });
 
   // Update order status (simple)
   router.patch("/:id/status", async (req, res) => {
-    try {
-      const { status } = req.body;
-      const updated = await orders.updateStatus(req.params.id, status);
-      if (!updated) return res.status(404).json({ error: "Order not found" });
-      res.json(updated);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    const { status } = req.body;
+    const updated = await orders.updateStatus(req.params.id, status);
+    res.json(updated);
   });
 
   // Tiny stats endpoint (optional)
   router.get("/stats/summary", async (req, res) => {
-    try {
-      const { from, to } = req.query; // ISO strings recommended
-      const summary = await orders.getStatsSummary({ from, to });
-      res.json(summary);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    const { from, to } = req.query;
+    const summary = await orders.getStatsSummary({ from, to });
+    res.json(summary);
   });
 
   return router;

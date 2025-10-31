@@ -73,7 +73,6 @@ function App() {
   // Handle quantity update
   const handleQuantityChange = async (productId, newQuantity) => {
     if (newQuantity < 1) {
-      // Remove item if quantity is 0 or less
       await handleRemoveItem(productId);
       return;
     }
@@ -111,7 +110,6 @@ function App() {
   const handleCheckoutComplete = () => {
     setShowCheckout(false);
     setShowCart(false);
-    // Refresh cart data after checkout
     fetchCart();
   };
 
@@ -131,7 +129,7 @@ function App() {
 
   return (
     <div className="app">
-      {/* User Toggle Button - Top Left */}
+      {/* User Toggle*/}
       <div className="user-toggle">
         <button onClick={handleViewToggle} className="toggle-button">
           {currentView === 'customer' ? 'Go to Admin' : 'Go to Customer'}
@@ -141,11 +139,10 @@ function App() {
         </span>
       </div>
 
-      {/* Shopping Cart Button - Top Right */}
       {currentView === 'customer' && !showCheckout && (
         <div className="shopping-cart-toggle">
           <button className="cart-button" onClick={() => setShowCart(!showCart)}>
-            {showCart ? '← Back to Catalogue' : `Cart (${cartItemCount})`}
+            {showCart ? 'Back to Catalogue' : `Cart (${cartItemCount})`}
           </button>
         </div>
       )}
@@ -170,11 +167,9 @@ function App() {
           <ShoppingCart
             cartItems={cartItems}
             cartTotal={cartTotal}
-            currentUserId={currentUserId}
             onQuantityChange={handleQuantityChange}
             onRemoveItem={handleRemoveItem}
             onCheckout={handleCheckout}
-            onContinueShopping={() => setShowCart(false)}
           />
         ) : (
           <Catalogue
