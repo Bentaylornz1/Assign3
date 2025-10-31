@@ -250,6 +250,12 @@ let db;
     const shoppingCartRouter = require("./routes/shoppingcartroute.cjs")(db);
     app.use("/api/cart", shoppingCartRouter);
 
+    const fulfilmentRouter = require("./routes/fulfilmentroute.cjs")(db);
+    app.use("/api/fulfilment", fulfilmentRouter);
+
+    const statsRouter = require("./routes/statsroute.cjs")(db);
+    app.use("/api/stats", statsRouter);
+
 
 
 
